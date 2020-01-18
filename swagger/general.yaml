@@ -1,0 +1,211 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "SMTA: General location"
+  description: |
+    This location used for management MTA based parameters.
+    ### Warning: Use https on production!
+host: "localhost:9443"
+basePath: "/smta/v1"
+
+security:
+  - basicAuth: []
+schemes:
+- "http"
+- "https"
+
+paths:
+  /general/main:
+    get:
+      tags:
+      - "Main"
+      summary: "Get main settings"
+      description: |
+        ## MTA global settings
+        ### Defaults for SMTA:
+           "[double_bounce_sender](http://www.postfix.org/postconf.5.html#double_bounce_sender)": "root@company.local",
+           "[message_size_limit](http://www.postfix.org/postconf.5.html#message_size_limit)": 20480000,
+           "[smtpd_banner](http://www.postfix.org/postconf.5.html#smtpd_banner)": "mta.company.local ESMTP",
+           "[unknown_address_reject_code](http://www.postfix.org/postconf.5.html#unknown_address_reject_code)": 550,
+           "[unknown_local_recipient_reject_code](http://www.postfix.org/postconf.5.html#unknown_local_recipient_reject_code)": 550,
+           "[unverified_sender_reject_code](http://www.postfix.org/postconf.5.html#unverified_sender_reject_code)": 550
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get main settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Main"
+      summary: "Update main settings"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Main parameters to be updated:"
+        required: true
+        schema:
+          $ref: "#/definitions/generalMain"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /general/ssl:
+    get:
+      tags:
+      - "SSL settings"
+      summary: "Get ssl settings"
+      description: |
+        ## MTA SSL settings
+        ### Defaults for SMTA:
+           "[smtp_tls_loglevel](http://www.postfix.org/postconf.5.html#smtp_tls_loglevel)": 0,
+           "[smtp_tls_security_level](http://www.postfix.org/postconf.5.html#smtp_tls_security_level)": "may",
+           "[smtpd_tls_received_header](http://www.postfix.org/postconf.5.html#smtpd_tls_received_header)": "yes",
+           "[smtpd_tls_security_level](http://www.postfix.org/postconf.5.html#smtpd_tls_security_level)": "may",
+           "[smtpd_tls_session_cache_timeout](http://www.postfix.org/postconf.5.html#smtpd_tls_session_cache_timeout)": "3600s",
+           "[smtpd_use_tls](http://www.postfix.org/postconf.5.html#smtpd_use_tls)": "yes"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get SSL settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "SSL settings"
+      summary: "Update ssl settings"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "SSL parameters to be updated:"
+        required: true
+        schema:
+          $ref: "#/definitions/generalSSL"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /general/cert:
+    get:
+      tags:
+      - "MTA certificate management"
+      summary: "Get SSL certificate"
+      consumes:
+      - "text/plain"
+      produces:
+      - "text/plain"
+      responses:
+        200:
+          description: "Successfully get certificate"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "MTA certificate management"
+      summary: "Update SSL certificate and key"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/generalCert"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error" 
+ 
+          
+securityDefinitions:
+   basicAuth:
+    type: "basic"
+
+
+definitions:
+  generalMain:
+    type: "object"
+    properties:
+      double_bounce_sender:
+        type: "string"
+        format: "email"
+        enum: [admin@company.local]
+      message_size_limit:
+        type: "integer"
+        format: "int64"
+        enum: [20480000]
+      smtpd_banner:
+        type: "string"
+        enum: [mta.company.local ESMTP]
+      unknown_local_recipient_reject_code:
+        type: "integer"
+        format: "int64"
+        enum: [550]
+      unverified_sender_reject_code:
+        type: "integer"
+        format: "int64"
+        enum: [550]
+      unknown_address_reject_code:
+        type: "integer"
+        format: "int64"
+        enum: [550]
+
+  generalSSL:
+    type: "object"
+    properties:
+      smtpd_use_tls:
+        type: "string"
+        enum: ["yes"]
+      smtp_tls_loglevel:
+        type: "integer"
+        format: "int64"
+        enum: [0]
+      smtp_tls_security_level:
+        type: "string"
+        enum: ["secure"]
+      smtpd_tls_security_level:
+        type: "string"
+        enum: ["may"]
+      smtpd_tls_received_header:
+        type: "string"
+        enum: ["yes"]
+      smtpd_tls_session_cache_timeout:
+        type: "string"
+        enum: ["3600s"]
+        
+  generalCert:
+    type: "object"
+    properties:
+      cert:
+        type: "string"
+        enum: ["-----BEGIN CERTIFICATE-----\nMIICETCCAZegAwIBAgIJAMBrg9LnmjcdMAoGCCqGSM49BAMCMEUxCzAJBgNVBAYT\nAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBXaWRn\naXRzIFB0eSBMdGQwHhcNMTgwNDA0MTUxOTIzWhcNMjgwNDAxMTUxOTIzWjBFMQsw\nCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50ZXJu\nZXQgV2lkZ2l0cyBQdHkgTHRkMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEJ6VvAqip\n4AaEGz/35HkGrWvtSQUcJF3r1YT/+rz3PDTDR3nmOF6wX3toijcSci9Ol3GjCObr\nTh0R9Z0QUUqwR2rcwfEYpAU8yfpauINKEBWSrDO9e9NVL9xmlsbsMSNoo1MwUTAd\nBgNVHQ4EFgQUmLlZS5Wzx5V3rLaUf1tu92UR2oAwHwYDVR0jBBgwFoAUmLlZS5Wz\nx5V3rLaUf1tu92UR2oAwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNoADBl\nAjEA0OOiJi5lRUmdCbcpsc5/oBLBgkkapDgVtNn6IEB3IqqteusSNT3TY2Nf3Z75\ne8WlAjAQr/KtuCxFmsHDeuxilXLWlH2AJQW9osNDoAhCPcxYqI6lCjvXUMcIx5UG\nTyBo8qg=\n-----END CERTIFICATE-----"]
+      key:
+        type: "string"
+        enum: ["-----BEGIN EC PARAMETERS-----\nBgUrgQQAIg==\n-----END EC PARAMETERS-----\n-----BEGIN EC PRIVATE KEY-----\nMIGkAgEBBDADmbxKdMjafZrK6U2N/ZOU1j3edz1P/eJ+QxBFkRIIM9a48k6koKpA\nDFmEXAxtgwGgBwYFK4EEACKhZANiAAQnpW8CqKngBoQbP/fkeQata+1JBRwkXevV\nhP/6vPc8NMNHeeY4XrBfe2iKNxJyL06XcaMI5utOHRH1nRBRSrBHatzB8RikBTzJ\n+lq4g0oQFZKsM71701Uv3GaWxuwxI2g=\n-----END EC PRIVATE KEY-----\n"]
+
+

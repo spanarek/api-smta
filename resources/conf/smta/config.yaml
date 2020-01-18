@@ -1,0 +1,8 @@
+---
+  postfix_configs_path: "/etc/postfix/"
+  amavisd_configs_path: "/etc/amavisd/"
+  api_user: "admin"
+  api_password: "smta"
+  api_port: "9443"
+  api_protocol: "http"
+  cors: "enabled"

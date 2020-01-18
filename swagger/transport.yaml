@@ -1,0 +1,452 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "SMTA: Transport rules"
+  description: |
+    This location used for management MTA transport parameters.
+    ### Warning: Use https on production!
+host: "localhost:9443"
+basePath: "/smta/v1"
+
+security:
+  - basicAuth: []
+schemes:
+- "http"
+- "https"
+
+paths:
+  /transport/main:
+    get:
+      tags:
+      - "Main"
+      summary: "Get main settings group"
+      description: |
+          Main transport settings.
+          - "mynetworks" The list of "trusted" remote SMTP clients that have more privileges than "strangers". 
+            In SMTA default configuration mynetworks addresess exclude checks from all restriction classess.
+          - "relay_domains" What destination domains (and subdomains thereof) this system will relay mail to.
+            SMTA recommended rejecting any mail, if external by senders from this list, via acl/senders.
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get main settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Main"
+      summary: "Update transport main settings"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Main parameters to be updated:"
+        required: true
+        schema:
+          $ref: "#/definitions/main"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /transport/map:
+    get:
+      tags:
+      - "Map"
+      summary: "Get transport table"
+      description: |
+          Lookup tables with mappings from recipient(src) address to(dst) (message delivery transport, next-hop destination). 
+          See [postfix transport](http://www.postfix.org/postconf.5.html#transport_maps) for details. 
+          - "src" (source) record implement as pcre type
+          - "dst" (destination) supported only "local" or "smtp" as transport
+          - "priority" using for positioned in table
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get map settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Map"
+      summary: "Update transport map table"
+      description: |
+          Lookup tables with mappings from recipient(src) address to(dst) (message delivery transport, next-hop destination). 
+          See [postfix transport](http://www.postfix.org/postconf.5.html#transport_maps) for details. 
+          - "src" (source) record implement as pcre type
+          - "dst" (destination) supported only "local" or "smtp" as transport
+          - "priority" using for positioned in table
+          ### Warning: this changes will be to works, only after you apply this map via method map-reload(see "[Apply map](#/Apply%20rule/post_transport_map_reload)" section)
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/map"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /transport/recipient-bcc:
+    get:
+      tags:
+      - "BCC rules"
+      summary: "Get bcc rules per recipient"
+      description: |
+        Optional BCC (blind carbon-copy) address lookup tables, indexed by recipient(src) address. The BCC address (multiple results are not supported) is added when mail enters from outside of Postfix.
+        - "src" (source) used as recipient(for), record format implement as pcre type
+        - "dst" (destination) carbon-copy recipient or alt recipient
+        - "priority" using for positioned in table
+        
+        See [Postfix documentation](http://www.postfix.org/postconf.5.html#recipient_bcc_maps) for details.
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get recipient-bcc settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "BCC rules"
+      summary: "Update bcc rules per recipient"
+      description: |
+        Optional BCC (blind carbon-copy) address lookup tables, indexed by recipient(src) address. The BCC address (multiple results are not supported) is added when mail enters from outside of Postfix.
+        - "src" (source) used as recipient(for), record format implement as pcre type
+        - "dst" (destination) carbon-copy recipient or alt recipient
+        - "priority" using for positioned in table
+        
+        See [Postfix documentation](http://www.postfix.org/postconf.5.html#recipient_bcc_maps) for details.
+        ### Warning: this changes will be to works, only after you apply this map via method map-reload(see "[Apply map](#/Apply%20rule/post_transport_map_reload)" section)
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Main parameters to be updated:"
+        required: true
+        schema:
+          $ref: "#/definitions/bcc"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /transport/sender-bcc:
+    get:
+      tags:
+      - "BCC rules"
+      summary: "Get bcc rules per sender"
+      description: |
+        Optional BCC (blind carbon-copy) address lookup tables, indexed by sender(src) address. The BCC address (multiple results are not supported) is added when mail enters from outside of Postfix.
+        - "src" (source) used as sender(from), record format implement as pcre type
+        - "dst" (destination) carbon-copy recipient or alt recipient
+        - "priority" using for positioned in table
+        
+        See [Postfix documentation](http://www.postfix.org/postconf.5.html#sender_bcc_maps) for details.
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get sender-bcc settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "BCC rules"
+      summary: "Update bcc rules per sender"
+      description: |
+        Optional BCC (blind carbon-copy) address lookup tables, indexed by sender(src) address. The BCC address (multiple results are not supported) is added when mail enters from outside of Postfix.
+        - "src" (source) used as sender(from), record format implement as pcre type
+        - "dst" (destination) carbon-copy recipient or alt recipient
+        - "priority" using for positioned in table
+        
+        See [Postfix documentation](http://www.postfix.org/postconf.5.html#sender_bcc_maps) for details.
+        ### Warning: this changes will be to works, only after you apply this map via method map-reload(see "[Apply map](#/Apply%20rule/post_transport_map_reload)" section)
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Main parameters to be updated:"
+        required: true
+        schema:
+          $ref: "#/definitions/bcc"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /transport/ldap:
+    get:
+      tags:
+      - "LDAP integration settings"
+      summary: "Get ldap settings group"
+      description: |
+       LDAP used for check recipients as relay_recipient_maps.
+       This map may be disabled, see transport/ldap-state for current status information.
+       See [postfix documentation](http://www.postfix.org/postconf.5.html#relay_recipient_maps) for parameter details
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get ldap settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "LDAP integration settings"
+      summary: "Update transport ldap settings"
+      description: |
+       LDAP used for check recipients as relay_recipient_maps.
+       This map may be disabled, see transport/ldap-state for current status information.
+       See [postfix documentation](http://www.postfix.org/postconf.5.html#relay_recipient_maps) for parameter details
+       ## Warning: always check map(see "[Test map rule](#/Test%20rule/get_transport_map_test)") before Enable
+       ### Warning: this changes will be to works, only after you apply this map via method map-reload(see "[Apply map](#/Apply%20rule/post_transport_map_reload)" section)
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ldap"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /transport/ldap-state:
+    get:
+      tags:
+      - "LDAP switch"
+      summary: "Get state of LDAP integration"
+      description: | 
+          ### Enable and disable ldap checks.
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get status of LDAP checks"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "LDAP switch"
+      summary: "Enable or disable ldap integration"
+      description: | 
+          ### Enable and disable ldap checks.
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        required: true
+        schema:
+          $ref: "#/definitions/ldapstate"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /transport/map-reload:
+    post:
+      tags:
+      - "Apply rule"
+      summary: "Apply map changes"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Supported type of maps: ldap, map, recipient-bcc, sender-bcc"
+        required: true
+        schema:
+          $ref: "#/definitions/map-reload"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /transport/map-test:
+    get:
+      tags:
+      - "Test rule"
+      summary: "Test recently updated map (use before map-reload)"
+      description: ""
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      parameters:
+       - in: query
+         name: type
+         type: string
+         enum: ["map", "ldap", "recipient-bcc", "sender-bcc"]
+       - in: query
+         name: email
+         type: string
+         default: test@company.local
+      responses:
+        200:
+          description: "Successfully get maptest settings"
+        500:
+          description: "Internal server error"
+
+securityDefinitions:
+   basicAuth:
+    type: "basic"
+
+definitions:
+  main:
+    type: "object"
+    properties:
+      relay_domains:
+        type: "array"
+        items:
+         type: string
+         example: "company.local"
+      mynetworks:
+        type: "array"
+        items:
+         type: string
+         enum: ["127.0.0.0/8", "10.0.0.1"]
+  map:
+   type: "object"
+   properties:
+    map: 
+     type: array
+     items: 
+      type: object
+      properties: 
+        src: 
+          type: string
+          example: root1@
+        dst: 
+          type: string
+          example: "local:"
+        priority: 
+          type: integer
+          format: int32
+          example: 0
+  bcc:
+   type: "object"
+   properties:
+    map: 
+     type: array
+     items: 
+      type: object
+      properties: 
+        src: 
+          type: string
+          example: ^user\.[a-z]\.[0-9]@example\.lan
+        dst: 
+          type: string
+          example: admin@example.lan
+        priority: 
+          type: integer
+          format: int32
+          example: 3
+  ldap:
+   type: "object"
+   properties: 
+    bind: 
+      type: string
+      example: yes
+    bind_dn: 
+      type: string
+      example: smta.service.account@example.lan
+    bind_pw: 
+      type: string
+      example: myverysecuredpassword
+    query_filter: 
+      type: string
+      example: (&(proxyAddresses=smtp:%s)(|(objectClass=user)(objectClass=group)(objectClass=contact)(objectClass=publicFolder)))
+    result_attribute: 
+      type: string
+      example: mail
+    search_base: 
+      type: string
+      example: dc=mydomain.local
+    server_host: 
+      type: array
+      items: 
+        type: string
+        example: 10.0.0.1
+    server_port: 
+      type: integer
+      format: int32
+      example: 389
+    timeout: 
+      type: integer
+      format: int32
+      example: 10
+    version: 
+      type: integer
+      format: int32
+      example: 3
+  ldapstate:
+   type: "object"
+   properties:
+    enabled:
+     type: boolean
+     example: false
+  map-reload:
+   type: object
+   properties:
+    name:
+     type: string
+     enum: 
+      - recipient-bcc
+      - ldap
+      - map
+      - sender-bcc
+
+  
+      

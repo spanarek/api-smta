@@ -1,0 +1,214 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "SMTA: Contentfilter location"
+  description: |
+    This location used for management contentfilter parameters and working with quarantine.
+    ### Warning: Use https on production!
+host: "localhost:9443"
+basePath: "/smta/v1"
+
+security:
+  - basicAuth: []
+schemes:
+- "http"
+- "https"
+
+paths:
+  /contentfilter/main:
+    get:
+      tags:
+      - "Contentfilter"
+      summary: "Get main settings group"
+      description: |
+        ## Global contenfilter settings
+          ### banned_filename_re:
+          Checking for banned MIME types and names. If any mail part matches,
+            the whole mail is rejected. Object banned_filename_re provides a list
+            of Perl regular expressions. <br><br>
+            
+           #### defaults:
+           ```
+           [
+           "^UNDECIPHERABLE$",
+           ".\\.(pif|scr)$",
+           "^application/x-msdownload$",
+           "^application/x-msdos-program$",
+           "^application/hta$",
+           "^(?!cid:).*\\.[^./]*[A-Za-z][^./]*\\.\\s*(exe|vbs|pif|scr|bat|cmd|com|cpl|dll)[.\\s]*$",
+           ".\\.(ade|adp|app|bas|bat|chm|cmd|com|cpl|crt|emf|exe|fxp|grp|hlp|hta|inf|ini|ins|isp|js|jse|jsp|lib|lnk|mda|mdb|mde|mdt|mdw|mdz|msc|msi|msp|mst|ocx|ops|pcd|pif|prg|reg|scr|sct|shb|shs|sys|vb|vbe|vbs|vxd|wmf|wsc|wsf|wsh)$"
+          ],
+          ```
+          ### Others:
+          | Parameter                  | Defaults                 | Description                                               |   |   |
+          |----------------------------|--------------------------|-----------------------------------------------------------|---|---|
+          | bounce_killer_score        | 0                        | Spam score points to add for joe-jobbed bounces           |   |   |
+          | do_syslog                  | 1                        | Log via syslogd (preferred)                               |   |   |
+          | enable_dkim_verification   | 1                        | DKIM (and historical DomainKeys) signature verification   |   |   |
+          | final_bad_header_destiny   | "D_DISCARD"              | Actions for bad headers mail                              |   |   |
+          | final_banned_destiny       | "D_DISCARD"              | Actions for bad attachments mail                          |   |   |
+          | final_spam_destiny         | "D_DISCARD"              | Actions for spam                                          |   |   |
+          | final_virus_destiny        | "D_DISCARD"              | Actions for virus                                         |   |   |
+          | log_level                  | 0                        | Verbosity 0..5                                            |   |   |
+          | quarantine_dir             | "/var/amavis/quarantine" | Quarantine messages location                              |   |   |
+          | sa_kill_level_deflt        | 6.9                      | Scores for quarantine message as Spam                     |   |   |
+          | sa_mail_body_size_limit    | 400                      | Maximum message size(in Kb) to pass to SpamAssassin for scanning |   |   |
+          | sa_spam_subject_tag        | "\*\*\*Spam***"            | Prefix for subject messages marked as spammy              |   |   |
+          | sa_tag2_level_deflt        | 5                        | Level of scores at which spam is tagging in the subject   |   |   |
+          | undecipherable_subject_tag | "\*\*\*UNCHECKED***"        | Prefix for subject message with unchecked attachments     |   |   |
+          
+        ### For more details see [amavis documentation](https://amavis.org/amavisd-new-docs.html).
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get main settings"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Contentfilter"
+      summary: "Update contentfilter main settings"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Parameters to be updated:"
+        required: true
+        schema:
+          $ref: "#/definitions/main"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /contentfilter/quarantine-list:
+    get:
+      tags:
+      - "Contentfilter"
+      summary: "Get list of quarantine messages"
+      description: ""
+      parameters:
+      - in: query
+        name: "limit"
+        required: false
+        type: integer
+        default: 10
+      - in: query
+        name: "dateStart"
+        required: false
+        type: string
+        default: "2018-09-28T11:31:39.082850212Z"
+      - in: query
+        name: "dateEnd"
+        required: false
+        type: string
+        default: "2019-03-28T11:31:39.082850212Z"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Server configuration updated"
+        500:
+          description: "Internal server error"
+  /contentfilter/quarantine-message:
+    get:
+      tags:
+      - "Contentfilter"
+      summary: "Get message information from quarantine by id"
+      description: ""
+      parameters:
+      - in: query
+        name: "id"
+        required: false
+        type: string
+        default: "badh-x2OP2QmAi0-e"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get main settings"
+        500:
+          description: "Internal server error"
+  /contentfilter/release-message:
+    post:
+      tags:
+      - "Contentfilter"
+      summary: "Update contentfilter message settings"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Main parameters to be updated:"
+        required: true
+        schema:
+          $ref: "#/definitions/contentfilterMessage"
+      responses:
+        200:
+          description: "Server configuration updated"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+
+securityDefinitions:
+   basicAuth:
+    type: "basic"
+          
+definitions:
+  main:
+    type: "object"
+    properties:
+      enable_dkim_verification:
+         type: "integer"
+         format: "int64"
+         enum: [1]
+      do_syslog:
+         type: "integer"
+         enum: [1]
+      double_bounce_sender:
+        type: "string"
+        format: "email"
+      sa_mail_body_size_limit:
+        type: "integer"
+        format: "int64"
+        enum: [555]
+      final_spam_destiny:
+        type: "string"
+        enum: ["D_DISCARD"]
+      quarantine_dir:
+        type: "string"
+        enum: ["/tmp/quarantine"]
+      sa_spam_subject_tag:
+        type: "string"
+        enum: ["***spammy***"]
+      banned_filename_re:
+        type: "array"
+        items: 
+         type: "string"
+         enum: ["^UNDECIPHERABLE$",".\\.(pif|scr)$",  "^application/x-msdownload$"]
+  contentfilterMessage:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        enum: ["banned-Y0GY4Bm1MnwA"]
+      alt_recipients:
+        type: "array"
+        items:
+          type: string
+          example: admin@company.local

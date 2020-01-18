@@ -1,0 +1,660 @@
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "SMTA: ACL location"
+  description: |
+    It is very detailed acl tables based on postfix access tables, amavis maps and amavis policy banks.
+    All lists usage pcre format.
+    All changes will be to works, only after you apply via method reload(see "[/acl/reload](#/Test%20and%20update/post_acl_reload)" section)
+    ### Warning: 
+     - #### Use smart-test before reload to avoid mistakes
+     - #### Use https on production!
+host: "localhost:9443"
+basePath: "/smta/v1"
+
+security:
+  - basicAuth: []
+schemes:
+- "http"
+- "https"
+
+paths:
+  /acl/helo:
+    get:
+      tags:
+      - "Tables"
+      summary: "Get helo list"
+      description: |
+        List for management [helo access table](http://www.postfix.org/postconf.5.html#check_helo_access) of MTA(postfix).
+        ### Rule fields:
+          - "subject": "HELO or EHLO hostname or parent domains"
+          - "priority": "rule position of list"
+          - "action": "OK or REJECT"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get helo list"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Tables"
+      summary: "Update helo list"
+      description: |
+        List for management [helo access table](http://www.postfix.org/postconf.5.html#check_helo_access) of MTA(postfix).
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Update list:"
+        required: true
+        schema:
+          $ref: "#/definitions/aclHelo"
+      responses:
+        200:
+          description: "Control list accepted"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /acl/clients:
+    get:
+      tags:
+      - "Tables"
+      summary: "Get clients list"
+      description: |
+        IP or domain addresses based list for management [client access tables](http://www.postfix.org/postconf.5.html#check_client_access) of MTA(postfix).
+        ### Rule fields and restrictions:
+         - "action": "OK" or "REJECT" for client_restrictions, and only "OK" for sender_restrictions
+         - "priority": rule position of list
+         - "rule": action scope or restriction_class [postfix](http://www.postfix.org/RESTRICTION_CLASS_README.html)
+        ### Example:
+        ```json
+         {
+         "acl": {
+          ".mail.example.lan": [
+         {
+          "action": "OK",
+          "priority": 0,
+          "rule": "sender_restrictions"
+         }
+         ],
+         "10.0.2.2": [{
+          "action": "OK",
+          "priority": 0,
+          "rule": "client_restrictions"
+         }]
+         }
+        }
+         ```
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get clients list"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Tables"
+      summary: "Update clients list"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: |
+          List for management [client access tables](http://www.postfix.org/postconf.5.html#check_client_access) of MTA(postfix).
+          ### Rule fields:
+           - "action": OK or REJECT
+           - "priority": rule position of list
+           - "rule": action scope or restriction_class [postfix](http://www.postfix.org/RESTRICTION_CLASS_README.html)
+        required: true
+        schema:
+          $ref: "#/definitions/aclClients"
+      responses:
+        200:
+          description: "Control list accepted"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /acl/recipients:
+    get:
+      tags:
+      - "Tables"
+      summary: "Get recipients list"
+      description: |
+        List for management [recipient access tables](http://www.postfix.org/postconf.5.html#check_recipient_access) of MTA(postfix).
+        This rules has priority over senders rules in current scope
+        ### Rule fields:
+        - "priority": rule position of list
+        - "rule": action scope, allowed here:
+           - sender_restrictions: scope based on [smtpd_sender_restrictions](http://www.postfix.org/postconf.5.html#smtpd_sender_restrictions)
+             action:
+              - "STRONG": Enable hard checks, such as: [reject_unverified_sender](http://www.postfix.org/postconf.5.html#reject_unverified_sender)
+              - "WHITELIST": this action allows you receive mail only from trusted senders (whitelist_sender_restrictions in /acl/senders method)
+              - "REJECT": don`t receive mail for recipient
+           - recipient_restrictions: scope based on [smtpd_recipient_restrictions](http://www.postfix.org/postconf.5.html#smtpd_recipient_restrictions)
+             action:
+              - "STRONG": Enable hard checks, such as: postgrey
+           - data_restrictions: scope based on [smtpd_data_restrictions](http://www.postfix.org/postconf.5.html#smtpd_data_restrictions)
+             action:
+              - "STRONG": Enable hard checks in [amavis](https://www.amavis.org/#doc), such as: spam_kill_level_maps => 4 and another rules in policy_bank{'STRONG'}
+          - banned_filename_maps_origin: scope based on [banned_filename_maps](https://www.amavis.org/#doc)
+            action:
+              - "BLOCK_ALL": reject all mail with attachments
+              - "BYPASS_ENCRYPTED": allow receive encrypted attachments
+          - banned_filename_maps_trusted: filename maps for trusted senders ("LIGHT" rule in /acl/senders method)
+              - "BLOCK_ALL": reject all mail with attachments
+              - "BYPASS_ENCRYPTED": allow receive encrypted attachments           
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get recipients list"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Tables"
+      summary: "Update recipients  list"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: |
+          List for management [recipient access tables](http://www.postfix.org/postconf.5.html#check_recipient_access) of MTA(postfix).
+          This rules has priority over senders rules in current scope
+        required: true
+        schema:
+          $ref: "#/definitions/aclRecipients"
+      responses:
+        200:
+          description: "Control list accepted"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /acl/senders:
+    get:
+      tags:
+      - "Tables"
+      summary: "Get senders list"
+      description: |
+        List for management [sender access tables](http://www.postfix.org/postconf.5.html#check_sender_access) of MTA(postfix).
+        ### Rule fields:
+        - "priority": rule position of list
+        - "rule": action scope, allowed here:
+          - client_restrictions: scope based on [smtpd_client_restrictions](http://www.postfix.org/postconf.5.html#smtpd_client_restrictions)
+            action:
+              - "OK": byapass smtpd_client_restrictions checks(PTR, ESMTP)
+          - sender_restrictions: scope based on [smtpd_sender_restrictions](http://www.postfix.org/postconf.5.html#smtpd_sender_restrictions)
+            action:
+              - "OK": byapass sender_restrictions(reject_non_fqdn_sender,reject_unknown_sender_domain,reject_unlisted_sender)
+              - "REJECT": discard sender(access denied in smtpd response)
+          - recipient_restrictions: scope based on [smtpd_recipient_restrictions](http://www.postfix.org/postconf.5.html#smtpd_recipient_restrictions)
+            action:
+              - "OK": byapass recipient_restrictions, such as: postgrey
+          - data_restrictions: scope based on [smtpd_data_restrictions](http://www.postfix.org/postconf.5.html#smtpd_data_restrictions)
+            action:
+              - "LIGHT": use policy_bank{'LIGHT'} in [amavis](https://www.amavis.org/#doc) configuration, by default: 
+                   ```
+                       { bypass_header_checks_maps => [1], 
+                         final_bad_header_destiny => D_PASS, 
+                         spam_kill_level_maps => ( 10.0 ), 
+                         banned_filename_maps => $banned_filename_maps_trusted 
+                      }
+                   ```
+          - whitelist_sender_restrictions: mark this sender as trusted for restricted recipients ("WHITELIST" rule in /acl/recipients method)                  
+            action: 
+              - "OK"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get senders list"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Tables"
+      summary: "Update senders  list"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Main parameters to be accepted:"
+        required: true
+        schema:
+          $ref: "#/definitions/aclSenders"
+      responses:
+        200:
+          description: "Control list accepted"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+  /acl/score-maps:
+    get:
+      tags:
+      - "Maps"
+      summary: "Get maps of scores"
+      description: |
+        This map management of amavis scoring system, for recipient per many senders.
+        ### Example:
+        ```
+         {
+         "maps": [{
+                   "priority": 1,
+                   "recipient": "company.local",
+                   "senders": [{
+                         "priority": 0,
+                         "scores": "+15",
+                         "sender": ".*badboy.*"
+                     },{
+                         "priority": 1,
+                         "scores": "-15",
+                         "sender": "admin@trusted.com"
+                   }]
+                },{
+                  "priority": 0,
+                  "recipient": "boss@company.local",
+                  "senders": [{
+                         "priority": 0,
+                         "scores": "+15",
+                         "sender": ".*"
+                  }]
+              }]
+            }
+        ```
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Successfully get score-maps list"
+        500:
+          description: "Internal server error"
+    post:
+      tags:
+      - "Maps"
+      summary: "Update maps of scores"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: "Main parameters to be accepted:"
+        required: true
+        schema:
+          $ref: "#/definitions/mapsScore"
+      responses:
+        200:
+          description: "Control map accepted"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"          
+  /acl/test:
+    get:
+      tags:
+      - "Test and update"
+      summary: "Check rules for mail address by access table type"
+      description: |
+        Response example:
+        ```
+        {
+          "client_restrictions": {
+          "action": "Rules not found"
+         },
+          "sender_restrictions": {
+          "action": "OK"
+         }
+        }
+        ```
+      parameters:
+      - in: query
+        name: "address"
+        required: true
+        type: string
+        default: "user@example.lan"
+      - in: query
+        name: "listType"
+        required: true
+        type: string
+        default: "clients"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Test is successful"
+        400:
+          description: "Invalid request"
+        500:
+          description: "Internal server error"           
+  /acl/smart-test:
+    get:
+      tags:
+      - "Test and update"
+      summary: "Check all rules for mail from and mail to"
+      description: |
+        Response example:
+        ```
+        {
+          "attachment": "DEFAULT",
+          "info": [],
+          "maxScores": 5,
+          "verdict": "Passed"
+        }
+        ```
+      parameters:
+      - in: query
+        name: "from"
+        required: true
+        type: string
+        default: "user@example.lan"
+      - in: query
+        name: "to"
+        required: true
+        type: string
+        default: "test@company.local"
+      consumes:
+      - "application/json"
+      produces:
+      - "application/json"
+      responses:
+        200:
+          description: "Test is successful"
+        400:
+          description: "Invalid request"
+        500:
+          description: "Internal server error"         
+  /acl/reload:
+    post:
+      tags:
+      - "Test and update"
+      summary: "Update senders  list"
+      consumes:
+      -  "application/json"
+      produces:
+      - "application/json"
+      parameters:
+      - in: "body"
+        name: "body"
+        description: |
+         Apply new rules for list(after update).
+         list names: 
+          - helo
+          - clients
+          - recipients
+          - senders
+          - score-maps
+        required: true
+        schema:
+          $ref: "#/definitions/aclReload"
+      responses:
+        200:
+          description: "New server configuration has been applied"
+        400:
+          description: "Invalid input"
+        500:
+          description: "Internal server error"
+
+securityDefinitions:
+   basicAuth:
+    type: "basic"
+
+definitions:
+  aclHelo:
+   type: "object"
+   properties:
+    rules: 
+     type: array
+     items: 
+      type: object
+      properties: 
+        subject:
+          type: "string"
+          enum: "trusted"
+        priority:
+          type: "integer"
+          format: "int64"
+          enum: [1]
+        action:
+          type: "string"
+          enum: [OK]
+  aclClients:
+   type: "object"
+   properties:
+    acl: 
+     type: object
+     properties:
+      example.lan:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "sender_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [1]
+          action:
+            type: "string"
+            enum: [OK]
+      "10.10.0.123":
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "client_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [0]
+          action:
+            type: "string"
+            enum: [OK, REJECT]
+  aclRecipients:
+   type: "object"
+   properties:
+    acl: 
+     type: object
+     properties:
+      on@company.local:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "recipient_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [0]
+          action:
+            type: "string"
+            enum: [STRONG]
+      mail.company.local:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "sender_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [1]
+          action:
+            type: "string"
+            enum: [STRONG, WHITELIST, REJECT]
+      email.company.local:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "data_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [2]
+          action:
+            type: "string"
+            enum: [STRONG]
+      user@company.local:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "banned_filename_maps_origin"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [3]
+          action:
+            type: "string"
+            enum: [BLOCK_ALL, BYPASS_ENCRYPTED]
+      user2@company.local:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "banned_filename_maps_trusted"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [4]
+          action:
+            type: "string"
+            enum: [BLOCK_ALL, BYPASS_ENCRYPTED]
+  aclSenders:
+   type: "object"
+   properties:
+    acl: 
+     type: object
+     properties:
+      trust.example.lan:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "recipient_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [0]
+          action:
+            type: "string"
+            enum: [OK]
+      badboy@example.lan:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "sender_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [1]
+          action:
+            type: "string"
+            enum: [REJECT]
+      email.example.lan:
+        type: array
+        items: 
+         type: object
+         properties: 
+          rule:
+            type: "string"
+            enum: "data_restrictions"
+          priority:
+            type: "integer"
+            format: "int64"
+            enum: [2]
+          action:
+            type: "string"
+            enum: [LIGHT]
+  mapsScore:
+   type: "object"
+   properties:
+    maps: 
+     type: array
+     items: 
+      type: object
+      properties: 
+        recipient:
+          type: "string"
+          enum: "company.local"
+        priority:
+          type: "integer"
+          format: "int64"
+          enum: [1]
+        senders:
+          type: array
+          items:
+           type: object
+           properties:
+            scores:
+             type: "string"
+             enum: ["+20"]
+            priority:
+             type: "integer"
+             format: "int64"
+             enum: [2]
+            sender:
+             type: "string"
+             enum: [".*badboy.*"]
+  aclReload:
+    type: object
+    properties:
+      name:
+        type: "string"
+        enum: 
+          - "helo"
+          - "clients"
+          - "recipients"
+          - "senders"
+          - "score-maps"
